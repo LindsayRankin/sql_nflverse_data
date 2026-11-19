@@ -1,0 +1,155 @@
+---
+title: "Explore"
+format: html
+---
+
+```{r}
+library(DBI)
+library(duckdb)
+
+if (exists("con") && dbIsValid(con)) dbDisconnect(con, shutdown = TRUE)
+
+source(here::here("R", "utils.R"))
+con <- connect_nflverse(read_only = TRUE)
+```
+
+# 1. Checks for script files 
+
+## Checks for: 04_views.R
+
+```{r}
+# ## To confirm the view exists
+
+dbGetQuery(con, "SELECT view_name FROM duckdb_views() WHERE NOT internal")
+```
+
+## Checks for: 05_comments.R
+
+```{r}
+
+# # Note/optional: To read them back
+dbGetQuery(con, "SELECT table_name, comment FROM duckdb_tables() WHERE comment IS NOT NULL;")
+dbGetQuery(con, "SELECT table_name, column_name, comment FROM duckdb_columns() WHERE comment IS NOT NULL;")
+# Only two tables show up under duckdb_tables() because the view comment (on ngs_passing_weekly) lives under duckdb_views()
+dbGetQuery(con, "SELECT view_name, comment FROM duckdb_views() WHERE comment IS NOT NULL")
+
+```
+
+## Checks for: 06_checks.R
+
+```{r}
+# Checking
+# This is also a check that your view works. week should have a min of 1 here.
+# The base ngs_passing table had a min of 0, and the ngs_passing_season view should show 0 for both min and max.
+res <- dbGetQuery(con, "SUMMARIZE ngs_passing_weekly")
+res[res$column_name %in% c("season", "week"), c("column_name", "min", "max", "null_percentage")]
+
+res2 <- dbGetQuery(con, "SUMMARIZE ngs_passing_season")
+res2[res$column_name %in% c("season", "week"), c("column_name", "min", "max", "null_percentage")]
+
+# Meta logs created in 01 build and 02 updates
+res3 <- dbGetQuery(con, "SELECT * FROM meta_load_log;")
+res3
+
+```
+
+
+
+
+# 2. Checking on details within the database 
+
+Can do ...
+
+```{sql connection=con}
+
+SELECT version()
+```
+
+
+
+
+
+```{sql}
+#| connection: con
+SELECT season, COUNT(*) AS n_plays, COUNT(DISTINCT game_id) AS n_games
+FROM nflverse_pbp
+GROUP BY season
+ORDER BY season;
+```
+
+Verify that zero rows returned means game_id, play_id is unique
+
+```{sql connection=con}
+
+SELECT game_id, play_id, COUNT(*) AS n
+FROM nflverse_pbp
+GROUP BY game_id, play_id
+HAVING COUNT(*) > 1;
+
+```
+
+Given by Claude: 
+```{sql connection=con}
+
+SELECT passer_player_id,
+       MAX(passer_player_name) AS passer,
+       COUNT(*)                AS pass_plays,
+       ROUND(AVG(epa), 3)      AS epa_per_play
+FROM nflverse_pbp
+WHERE season = 2026
+  AND season_type = 'REG'
+  AND play_type = 'pass'
+  AND epa IS NOT NULL
+  AND passer_player_id IS NOT NULL
+GROUP BY passer_player_id
+HAVING COUNT(*) >= 200
+ORDER BY epa_per_play DESC;
+
+```
+
+Trying variations to see what they do.
+
+In SQL single line comments with two consequetive hyphens --
+Multi-line or block coments with /* and */
+
+```{sql connection=con}
+
+SELECT passer_player_id,
+       MAX(passer_player_name) AS passer, -- FIRST or LAST or MAX
+       COUNT(*) AS pass_plays, -- COUNT() also worked
+       ROUND(AVG(epa), 3)      AS epa_per_play, -- didn't originally have comma at end, still works
+       --ROUND(MAX(epa), 3)      AS epa_max
+FROM nflverse_pbp
+WHERE season = 2026
+  AND season_type = 'REG'
+  AND play_type = 'pass'
+  AND epa IS NOT NULL -- worked even without all 3 criteria
+  AND passer_player_id IS NOT NULL
+GROUP BY passer_player_id
+HAVING COUNT(*) >= 200
+ORDER BY epa_per_play DESC;
+
+```
+
+
+```{sql connection=con}
+
+--DESCRIBE ngs_passing;
+
+-- DESCRIBE ngs_passing_weekly;
+
+SELECT DISTINCT week FROM ngs_passing_season ORDER BY 1;
+
+```
+
+
+
+# Disconnect! 
+
+```{r}
+dbDisconnect(con, shutdown = TRUE)
+```
+
+
+
+
