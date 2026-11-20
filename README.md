@@ -1,5 +1,6 @@
 # README for SQL nflverse data
 
+🚧 👷‍♀️Active work in progress, late November 2026... 
 
 ## Purpose
 
@@ -29,18 +30,25 @@ Play by play, PFR passing, PFR rushing, FTN charting, Next Gen Stats passing, Ne
 ### Metadata
 
 #### Views and Comments
-Note some inherent messiness with the data and how it is addressed here: 
-PFR data can be loaded as week or season summaries, so the data is loaded into different tables for week and season (and different tables for pass or rush; could later add in receiving and defense when desired)
 
-In contrast, Next Gen Stats loads week and season data (season indicated as week = 0) all together. 
-A view is created to sit above the raw tables that can be queried to create an analysis-ready version, and short comments are added to the table objects as reminders. 
+Many of the data tables are weekly summaries. 
 
-pre-writing common joins
-giving stable, readable names"
+Next Gen Stats (separate tables for assing, rushing, and receiving) loads week and season data (season indicated as week = 0) all together.
+Views are created to distinguish weekly data or season data, i.e., ngs_passing_weekly, ngs_passing_season. (SQL reminder: Views sit above the raw tables that can be queried to create an analysis-ready version, and short comments are added to the table objects as reminders.) 
+
+The main play-level data are the play-by-play (pbp) and the FTN charting. A view is set up to join these.
+
+🚧 👷‍♀️
+BELOW IN PARTICULAR IS STILL UNDER CONSTRUCTION, NOVEMBER 2026...
+
+
 
 #### Checks
-Checks are some code to try... 
 
+Some manual checks were included. \
+pbp_key_unique.sql checks that (game_id, play_id) uniquely identifies one row in nflverse_pbp, meaning no play appears twice. DuckDB would not have forced this, but PostgreSQL would have forced us to declare these two as PRIMARY KEY and would have rejected duplicates. Also helps address if any errors occur during script 02 trying to update. Note that it ignores NULL values, which is fine (some rows may not contain a play_id if they indicate other aspects of a game)
+ngs_views_partition.sql checks that splitting Next Gen Stats into weekly and season accounts for all rows. 
+ftn_without_pbp.sql checks that all FTN charting has a matching play in the pbp data. (The reverse may not be true - charting may not exist for all plays.)
 
 
 

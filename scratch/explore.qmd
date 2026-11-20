@@ -20,8 +20,10 @@ con <- connect_nflverse(read_only = TRUE)
 ```{r}
 # ## To confirm the view exists
 
-dbGetQuery(con, "SELECT view_name FROM duckdb_views() WHERE NOT internal")
+dbGetQuery(con, "SELECT view_name FROM duckdb_views() WHERE NOT internal ORDER BY view_name")
 ```
+
+
 
 ## Checks for: 05_comments.R
 

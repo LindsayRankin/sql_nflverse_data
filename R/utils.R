@@ -6,11 +6,16 @@ connect_nflverse <- function(read_only = FALSE) {
   dbConnect(duckdb(), dbdir = DB_PATH, read_only = read_only)
 }
 
-# Run every .sql file in a folder (one statement per file), in filename order
+# Updated to run views wit multiple statements, splitting them
 run_sql_dir <- function(con, dir) {
   for (f in sort(list.files(dir, pattern = "\\.sql$", full.names = TRUE))) {
     message("Running ", f)
-    dbExecute(con, paste(readLines(f), collapse = "\n"))
+    sql   <- paste(readLines(f, warn = FALSE), collapse = "\n")
+    # split on a semicolon that ends a line (or the file)
+    stmts <- trimws(strsplit(sql, ";[ \t]*(\r?\n|$)")[[1]])
+    # drop pieces that are empty or only comments
+    stmts <- stmts[nzchar(trimws(gsub("--[^\n]*", "", stmts)))]
+    for (s in stmts) dbExecute(con, s)
   }
 }
 

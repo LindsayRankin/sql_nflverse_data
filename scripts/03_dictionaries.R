@@ -7,7 +7,7 @@ dicts <- list(
   dict_ftn_charting  = nflreadr::dictionary_ftn_charting,
   dict_ngs           = nflreadr::dictionary_nextgen_stats,
   dict_pfr_pass      = nflreadr::dictionary_pfr_passing,
-  # there is not a dictionary for pfr rushing
+  # there is not a dictionary for pfr rush
   dict_players       = nflreadr::dictionary_players,
   dict_schedules     = nflreadr::dictionary_schedules 
 )
